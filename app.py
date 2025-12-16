@@ -53,9 +53,9 @@ def _get_secret(name: str, default: str = "") -> str:
     return os.getenv(name, default).strip()
 
 # Si tenés secrets.toml, podés borrar estos defaults hardcodeados y dejar default=""
-IDEALISTA_API_KEY = "5budo8m8y69xohr4vt3bboqwpmsxaaho".strip()
-IDEALISTA_API_SECRET = "cjdQFudJcyB3".strip()
-GOOGLE_API_KEY = "AIzaSyBJg82Q7YBf-6XwkCc3RBN3RcflWDpySLc".strip()
+IDEALISTA_API_KEY = st.secrets["IDEALISTA_API_KEY"].strip()
+IDEALISTA_API_SECRET = st.secrets["IDEALISTA_API_SECRET"].strip()
+GOOGLE_API_KEY = st.secrets["GOOGLE_API_KEY"].strip()
 
 if not GOOGLE_API_KEY:
     st.error("Falta GOOGLE_API_KEY. Configurala en .streamlit/secrets.toml o como variable de entorno.")
@@ -148,18 +148,12 @@ def _request_token(base_url, api_key, api_secret):
     return None, {"status": r.status_code, "payload": payload}
 
 @st.cache_data(ttl=50 * 60, show_spinner=False)
+@st.cache_data(ttl=50 * 60, show_spinner=False)
 def get_token_cached(api_key, api_secret):
-    # PRODUCCIÓN primero (sandbox no resuelve en tu red)
-    token_prod, err_prod = _request_token("https://api.idealista.com", api_key, api_secret)
-    if token_prod:
-        return token_prod, "prod"
-
-    # sandbox como fallback (por si algún día te funciona)
-    token_sandbox, err_sandbox = _request_token("https://api-sandbox.idealista.com", api_key, api_secret)
-    if token_sandbox:
-        return token_sandbox, "sandbox"
-
-    raise RuntimeError(f"No se pudo obtener token Idealista. Prod: {err_prod} | Sandbox: {err_sandbox}")
+    token, err = _request_token("https://api.idealista.com", api_key, api_secret)
+    if token:
+        return token, "prod"
+    raise RuntimeError(f"No se pudo obtener token Idealista en producción. Detalle: {err}")
 
 
 # ------------------------------------------------------------
@@ -634,3 +628,4 @@ with col2:
         st_folium(mapa_show, width=700, height=520)
     else:
         st.components.v1.html(mapa_show._repr_html_(), height=520, scrolling=True)
+
